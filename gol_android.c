@@ -14,23 +14,24 @@
 #include "CNFGAndroid.h"
 
 #define CNFG_IMPLEMENTATION
-#define CNFG3D
 
 #include "CNFG.h"
 
 #define ROWS 32
 #define COLS 32
+
 #define ALIVE 1
 #define DEAD 0
 
-short grid[ROWS][COLS] = {{0}};
-short w, h, cell_width, cell_height;
+int grid[ROWS][COLS] = {{0}};
+short w, h;
+int cell_width, cell_height;
 
 volatile int suspended;
 
 void HandleKey(int keycode, int bDown) {}
 
-void GetCellIndex(int x, int y, short *cell_x, short *cell_y)
+void GetCellIndex(int x, int y, int *cell_x, int *cell_y)
 {
 	*cell_x = x / (w / COLS);
 	*cell_y = y / (h / ROWS);
@@ -43,7 +44,7 @@ int OnGrid(int cell_x, int cell_y)
 
 void ToggleCell(int x, int y, int val)
 {
-	short cell_x, cell_y;
+	int cell_x, cell_y;
 	GetCellIndex(x, y, &cell_x, &cell_y);
 	if (OnGrid(cell_x, cell_y))
 		grid[cell_x][cell_y] = val;
@@ -73,15 +74,15 @@ void HandleResume()
 
 void DrawCell(int x, int y)
 {
-	short cell_x = x * cell_width;
-	short cell_y = y * cell_height;
+	int cell_x = x * cell_width;
+	int cell_y = y * cell_height;
 
 	CNFGTackRectangle(cell_x, cell_y, cell_x + cell_width, cell_y + cell_height);
 }
 
 int CountNeighbours(int x, int y)
 {
-	short neighbours = 0;
+	int neighbours = 0;
 
 	for (int i = x - 1; i <= x + 1; i++)
 		for (int j = y - 1; j <= y + 1; j++)
@@ -91,7 +92,7 @@ int CountNeighbours(int x, int y)
 	return neighbours;
 }
 
-void ApplyRules(int x, int y, short next_gen[ROWS][COLS])
+void ApplyRules(int x, int y, int next_gen[ROWS][COLS])
 {
 	int neighbours_count = CountNeighbours(x, y);
 	if (grid[x][y] == ALIVE)
@@ -112,8 +113,8 @@ void ApplyRules(int x, int y, short next_gen[ROWS][COLS])
 
 void DrawCells()
 {
-	short next_gen[ROWS][COLS];
-	memcpy(next_gen, grid, sizeof(short[ROWS][COLS]));
+	int next_gen[ROWS][COLS];
+	memcpy(next_gen, grid, sizeof(int[ROWS][COLS]));
 	for (int y = 0; y < ROWS; ++y)
 		for (int x = 0; x < COLS; ++x)
 		{
@@ -121,7 +122,7 @@ void DrawCells()
 			if (grid[x][y] == ALIVE)
 				DrawCell(x, y);
 		}
-	memcpy(grid, next_gen, sizeof(short[ROWS][COLS]));
+	memcpy(grid, next_gen, sizeof(int[ROWS][COLS]));
 }
 
 int main()
