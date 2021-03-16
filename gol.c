@@ -30,6 +30,7 @@ int grid[ROWS][COLS] = {{0}};
 short w, h;
 int cell_width, cell_height;
 int paused = 0;
+int reset_t = 0;
 int font_size = 10;
 
 volatile int suspended;
@@ -50,6 +51,7 @@ void HandleKey(int keycode, int bDown)
 			break;
 		case 114:
 			memset(grid, 0, sizeof(int[ROWS][COLS]));
+			reset_t = OGGetAbsoluteTime();
 			break;
 		}
 	else
@@ -201,9 +203,20 @@ void DrawCells()
 	memcpy(grid, next_gen, sizeof(int[ROWS][COLS]));
 }
 
+void DrawMessages(int t)
+{
+	if (paused)
+		DrawMessage(w - 200, 10, "Paused");
+	if (reset_t)
+		if (t - reset_t <= 1)
+			DrawMessage(10, 10, "Reset");
+		else
+			reset_t = 0;
+}
+
 int main()
 {
-	// double absolute_time;
+	int absolute_time;
 	CNFGBGColor = 0x000080ff;
 	GolSetup();
 	cell_width = w / COLS;
@@ -223,10 +236,8 @@ int main()
 		CNFGColor(0xff00ffff);
 		DrawCells();
 
-		if (paused)
-			DrawMessage(w - 200, 10, "Paused");
-
-		// absolute_time = OGGetAbsoluteTime();
+		absolute_time = OGGetAbsoluteTime();
+		DrawMessages(absolute_time);
 
 		CNFGSwapBuffers();
 	}
