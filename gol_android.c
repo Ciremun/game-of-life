@@ -137,13 +137,8 @@ int main()
 		CNFGClearFrame();
 		CNFGHandleInput();
 
-		if (suspended)
-		{
-			usleep(50000);
-			continue;
-		}
-
-		usleep(40000);
+		usleep(50000);
+		if (suspended) continue;
 
 		CNFGColor(0xff00ffff);
 		DrawCells();

@@ -1,5 +1,6 @@
 .vscode/
+makecapk/
 *.keystore
-cnfgtest.apk
+*.apk
 *.obj
 *.exe

@@ -7,10 +7,10 @@ all : makecapk.apk
 
 # WARNING WARNING WARNING!  YOU ABSOLUTELY MUST OVERRIDE THE PROJECT NAME
 # you should also override these parameters, get your own signatre file and make your own manifest.
-APPNAME?=cnfgtest
+APPNAME?=gol
 LABEL?=$(APPNAME)
 APKFILE ?= $(APPNAME).apk
-PACKAGENAME?=org.yourorg.$(APPNAME)
+PACKAGENAME?=org.ciremun.$(APPNAME)
 RAWDRAWANDROID?=.
 RAWDRAWANDROIDSRCS=$(RAWDRAWANDROID)/android_native_app_glue.c
 SRC?=gol_android.c
