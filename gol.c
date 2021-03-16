@@ -11,14 +11,7 @@
 #include <string.h>
 #include "rawdraw/os_generic.h"
 
-#ifdef __ANDROID__
-#include <GLES3/gl3.h>
-#include <asset_manager.h>
-#include <asset_manager_jni.h>
-#include <android_native_app_glue.h>
-#include <android/sensor.h>
-#include "CNFGAndroid.h"
-#elif _MSC_VER
+#ifdef _MSC_VER
 #pragma comment(lib, "gdi32")
 #pragma comment(lib, "User32")
 #endif
