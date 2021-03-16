@@ -2,7 +2,7 @@
 // NO WARRANTY! NO GUARANTEE OF SUPPORT! USE AT YOUR OWN RISK
 
 // TODO(#1): linux makefile
-// TODO: action popup animation
+// TODO(#2): action popup animation
 // currently: paused, reset
 
 #include <stdio.h>
