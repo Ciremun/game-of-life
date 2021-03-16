@@ -1,6 +1,7 @@
 .vscode/
 makecapk/
 build/
+gol
 *.keystore
 *.apk
 *.obj
