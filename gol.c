@@ -1,9 +1,9 @@
 //Copyright (c) 2011-2020 <>< Charles Lohr - Under the MIT/x11 or NewBSD License you choose.
 // NO WARRANTY! NO GUARANTEE OF SUPPORT! USE AT YOUR OWN RISK
 
-// TODO(#1): linux makefile
 // TODO(#2): action popup animation
 // currently: paused, reset
+// TODO: update readme
 
 #include <stdio.h>
 #include <stdlib.h>
