@@ -30,6 +30,7 @@ int grid[ROWS][COLS] = {{0}};
 short w, h;
 int cell_width, cell_height;
 int paused = 0;
+int font_size = 10;
 
 volatile int suspended;
 
@@ -73,7 +74,7 @@ void HandleButton(int x, int y, int button, int bDown)
 	if (bDown)
 	{
 #ifdef __ANDROID__
-		if ((w-100 <= x && x <= w) && (0 <= y && y <= 100))
+		if ((w - 100 <= x && x <= w) && (0 <= y && y <= 100))
 		{
 			keyboard_up = !keyboard_up;
 			AndroidDisplayKeyboard(keyboard_up);
@@ -137,6 +138,14 @@ void ToggleCell(int x, int y, int val)
 		grid[cell_x][cell_y] = val;
 }
 
+void DrawMessage(int x, int y, const char *t)
+{
+	CNFGColor(0xffffffff);
+	CNFGPenX = x;
+	CNFGPenY = y;
+	CNFGDrawText(t, font_size);
+}
+
 void DrawCell(int x, int y)
 {
 	int cell_x = x * cell_width;
@@ -194,6 +203,7 @@ void DrawCells()
 
 int main()
 {
+	// double absolute_time;
 	CNFGBGColor = 0x000080ff;
 	GolSetup();
 	cell_width = w / COLS;
@@ -204,13 +214,19 @@ int main()
 		CNFGClearFrame();
 		CNFGHandleInput();
 
-		if (!paused)
-			sleep_ms(50);
 		if (suspended)
 			continue;
 
+		if (!paused)
+			sleep_ms(50);
+
 		CNFGColor(0xff00ffff);
 		DrawCells();
+
+		if (paused)
+			DrawMessage(w - 200, 10, "Paused");
+
+		// absolute_time = OGGetAbsoluteTime();
 
 		CNFGSwapBuffers();
 	}
