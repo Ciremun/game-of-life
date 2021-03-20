@@ -20,80 +20,131 @@
 
 #include "rawdraw/CNFG.h"
 
-#define ROWS 32
-#define COLS 32
-
 #define ALIVE 1
 #define DEAD 0
+#define DEFAULT_GRID_SIZE 32
 
-int grid[ROWS][COLS] = {{0}};
-short w, h;
-int cell_width, cell_height;
+#define SPACE_KEY 32
+#define R_KEY 114
+
+#ifdef _WIN32
+#define MINUS_KEY 189
+#define PLUS_KEY 187
+#else
+#define MINUS_KEY 45
+#define PLUS_KEY 43
+#define EQ_KEY 61
+#endif
+
+#define GRID_SIZE(gs) (sizeof(int) * gs * gs)
+
+// typedef struct {
+// 	void* grid;
+// 	int size;
+// } Grid;
+
+int *grid = NULL;
+int *next_grid = NULL;
+int grid_size = DEFAULT_GRID_SIZE;
 int paused = 0;
 int reset_t = 0;
-int font_size = 10;
+
+short w, h;
+int cell_width, cell_height;
 
 volatile int suspended;
 
 #ifdef __ANDROID__
 static int keyboard_up;
+int font_size = 20;
+int paused_t_width = 350;
+#else
+int font_size = 10;
+int paused_t_width = 200;
 #endif
 
 void ToggleCell(int x, int y, int val);
 
+void change_grid_size(int new_size)
+{
+    grid_size = new_size;
+    cell_width = w / grid_size;
+    cell_height = h / grid_size;
+    grid = realloc(grid, GRID_SIZE(grid_size));
+    next_grid = realloc(next_grid, GRID_SIZE(grid_size));
+    memset(grid, 0, GRID_SIZE(grid_size));
+    memset(next_grid, 0, GRID_SIZE(grid_size));
+}
+
 void HandleKey(int keycode, int bDown)
 {
-	if (bDown)
-		switch (keycode)
-		{
-		case 32:
-			paused = !paused;
-			break;
-		case 114:
-			memset(grid, 0, sizeof(int[ROWS][COLS]));
-			reset_t = OGGetAbsoluteTime();
-			break;
-		}
-	else
-	{
-#ifdef __ANDROID__
-		switch (keycode)
-		{
-		case 10:
-			keyboard_up = 0;
-			AndroidDisplayKeyboard(keyboard_up);
-			break;
-		case 4:
-			AndroidSendToBack(1);
-			break;
-		}
+    if (bDown)
+        switch (keycode)
+        {
+        case SPACE_KEY:
+            paused = !paused;
+            break;
+        case R_KEY:
+            memset(grid, 0, GRID_SIZE(grid_size));
+            reset_t = OGGetAbsoluteTime();
+            break;
+        case MINUS_KEY:
+        {
+            int new_size = grid_size - 4;
+            if (new_size <= 0)
+            {
+                return;
+            }
+            change_grid_size(new_size);
+        }
+        break;
+#ifndef _WIN32
+        case EQ_KEY:
 #endif
-	}
+        case PLUS_KEY:
+            change_grid_size(grid_size + 4);
+            break;
+        }
+    else
+    {
+#ifdef __ANDROID__
+        switch (keycode)
+        {
+        case 10:
+            keyboard_up = 0;
+            AndroidDisplayKeyboard(keyboard_up);
+            break;
+        case 4:
+            AndroidSendToBack(1);
+            break;
+        }
+#endif
+    }
 }
 
 void HandleButton(int x, int y, int button, int bDown)
 {
-	if (bDown)
-	{
+    if (bDown)
+    {
 #ifdef __ANDROID__
-		if ((w - 100 <= x && x <= w) && (0 <= y && y <= 100))
-		{
-			keyboard_up = !keyboard_up;
-			AndroidDisplayKeyboard(keyboard_up);
-			return;
-		}
+        if ((w - 100 <= x && x <= w) && (0 <= y && y <= 100))
+        {
+            keyboard_up = !keyboard_up;
+            AndroidDisplayKeyboard(keyboard_up);
+            return;
+        }
 #endif
-		ToggleCell(x, y, ALIVE);
-	}
+        ToggleCell(x, y, ALIVE);
+    }
 }
 
 void HandleMotion(int x, int y, int mask)
 {
 #ifndef __ANDROID__
-	if (!mask)
-		return;
+    if (!mask)
+        return;
 #endif
-	ToggleCell(x, y, ALIVE);
+    ToggleCell(x, y, ALIVE);
 }
 
 void HandleDestroy() {}
@@ -103,144 +154,153 @@ void HandleResume() { suspended = 0; }
 void sleep_ms(int ms)
 {
 #ifdef _WIN32
-	_sleep(ms);
+    _sleep(ms);
 #else
-	usleep(ms * 1000);
+    usleep(ms * 1000);
 #endif
 }
 
 void GolSetup()
 {
 #ifdef __ANDROID__
-	CNFGSetupFullscreen("gol", 0);
-	CNFGGetDimensions(&w, &h);
+    CNFGSetupFullscreen("gol", 0);
+    CNFGGetDimensions(&w, &h);
 #else
-	w = 1024;
-	h = 768;
-	CNFGSetup("gol", w, h);
+    w = 1024;
+    h = 768;
+    CNFGSetup("gol", w, h);
 #endif
 }
 
 void GetCellIndex(int x, int y, int *cell_x, int *cell_y)
 {
-	*cell_x = x / (w / COLS);
-	*cell_y = y / (h / ROWS);
+    *cell_x = x / (w / grid_size);
+    *cell_y = y / (h / grid_size);
 }
 
 int OnGrid(int cell_x, int cell_y)
 {
-	return (0 <= cell_x && cell_x <= COLS - 1) && (0 <= cell_y && cell_y <= ROWS - 1);
+    return (0 <= cell_x && cell_x <= grid_size - 1) && (0 <= cell_y && cell_y <= grid_size - 1);
 }
 
 void ToggleCell(int x, int y, int val)
 {
-	int cell_x, cell_y;
-	GetCellIndex(x, y, &cell_x, &cell_y);
-	if (OnGrid(cell_x, cell_y))
-		grid[cell_x][cell_y] = val;
+    int cell_x, cell_y;
+    GetCellIndex(x, y, &cell_x, &cell_y);
+    if (OnGrid(cell_x, cell_y))
+        grid[cell_x * grid_size + cell_y] = val;
 }
 
 void DrawMessage(int x, int y, const char *t)
 {
-	CNFGColor(0xffffffff);
-	CNFGPenX = x;
-	CNFGPenY = y;
-	CNFGDrawText(t, font_size);
+    CNFGColor(0xffffffff);
+    CNFGPenX = x;
+    CNFGPenY = y;
+    CNFGDrawText(t, font_size);
 }
 
 void DrawCell(int x, int y)
 {
-	int cell_x = x * cell_width;
-	int cell_y = y * cell_height;
+    int cell_x = x * cell_width;
+    int cell_y = y * cell_height;
 
-	CNFGTackRectangle(cell_x, cell_y, cell_x + cell_width, cell_y + cell_height);
+    CNFGTackRectangle(cell_x, cell_y, cell_x + cell_width, cell_y + cell_height);
 }
 
 int CountNeighbours(int x, int y)
 {
-	int neighbours = 0;
+    int neighbours = 0;
 
-	for (int i = x - 1; i <= x + 1; i++)
-		for (int j = y - 1; j <= y + 1; j++)
-			if (OnGrid(i, j) && (i != x || j != y) && grid[i][j] == ALIVE)
-				neighbours++;
+    for (int i = x - 1; i <= x + 1; i++)
+        for (int j = y - 1; j <= y + 1; j++)
+            if (OnGrid(i, j) && (i != x || j != y) && grid[i * grid_size + j] == ALIVE)
+                neighbours++;
 
-	return neighbours;
+    return neighbours;
 }
 
-void ApplyRules(int x, int y, int next_gen[ROWS][COLS])
+void ApplyRules(int x, int y)
 {
-	int neighbours_count = CountNeighbours(x, y);
-	if (grid[x][y] == ALIVE)
-	{
-		if (neighbours_count < 2)
-			next_gen[x][y] = DEAD;
-		else if (neighbours_count == 2 || neighbours_count == 3)
-		{
-		}
-		else if (neighbours_count > 3)
-			next_gen[x][y] = DEAD;
-	}
-	else if (grid[x][y] == DEAD)
-	{
-		if (neighbours_count == 3)
-			next_gen[x][y] = ALIVE;
-	}
+    int neighbours_count = CountNeighbours(x, y);
+    if (grid[x * grid_size + y] == ALIVE)
+    {
+        if (neighbours_count < 2)
+            next_grid[x * grid_size + y] = DEAD;
+        else if (neighbours_count == 2 || neighbours_count == 3)
+        {
+        }
+        else if (neighbours_count > 3)
+            next_grid[x * grid_size + y] = DEAD;
+    }
+    else if (grid[x * grid_size + y] == DEAD)
+    {
+        if (neighbours_count == 3)
+            next_grid[x * grid_size + y] = ALIVE;
+    }
 }
 
 void DrawCells()
 {
-	int next_gen[ROWS][COLS];
-	memcpy(next_gen, grid, sizeof(int[ROWS][COLS]));
-	for (int y = 0; y < ROWS; ++y)
-		for (int x = 0; x < COLS; ++x)
-		{
-			if (!paused)
-				ApplyRules(x, y, next_gen);
-			if (grid[x][y] == ALIVE)
-				DrawCell(x, y);
-		}
-	memcpy(grid, next_gen, sizeof(int[ROWS][COLS]));
+    memcpy(next_grid, grid, GRID_SIZE(grid_size));
+    for (int y = 0; y < grid_size; ++y)
+        for (int x = 0; x < grid_size; ++x)
+        {
+            if (!paused)
+                ApplyRules(x, y);
+            if (grid[x * grid_size + y] == ALIVE)
+                DrawCell(x, y);
+        }
+    memcpy(grid, next_grid, GRID_SIZE(grid_size));
 }
 
 void DrawMessages(int t)
 {
-	if (paused)
-		DrawMessage(w - 200, 10, "Paused");
-	if (reset_t)
-		if (t - reset_t <= 1)
-			DrawMessage(10, 10, "Reset");
-		else
-			reset_t = 0;
+    if (paused)
+    {
+        DrawMessage(w - paused_t_width, 10, "Paused");
+    }
+    if (reset_t)
+    {
+        if (t - reset_t <= 1)
+        {
+            DrawMessage(10, 10, "Reset");
+        }
+        else
+        {
+            reset_t = 0;
+        }
+    }
 }
 
 int main()
 {
-	int absolute_time;
-	CNFGBGColor = 0x000080ff;
-	GolSetup();
-	cell_width = w / COLS;
-	cell_height = h / ROWS;
+    int absolute_time;
+    CNFGBGColor = 0x000080ff;
+    GolSetup();
+    cell_width = w / grid_size;
+    cell_height = h / grid_size;
+    grid = calloc(1, GRID_SIZE(grid_size));
+    next_grid = calloc(1, GRID_SIZE(grid_size));
 
-	while (1)
-	{
-		CNFGClearFrame();
-		CNFGHandleInput();
+    while (1)
+    {
+        CNFGClearFrame();
+        CNFGHandleInput();
 
-		if (suspended)
-			continue;
+        if (suspended)
+            continue;
 
-		if (!paused)
-			sleep_ms(50);
+        if (!paused)
+            sleep_ms(50);
 
-		CNFGColor(0xff00ffff);
-		DrawCells();
+        CNFGColor(0xff00ffff);
+        DrawCells();
 
-		absolute_time = OGGetAbsoluteTime();
-		DrawMessages(absolute_time);
+        absolute_time = OGGetAbsoluteTime();
+        DrawMessages(absolute_time);
 
-		CNFGSwapBuffers();
-	}
+        CNFGSwapBuffers();
+    }
 
-	return 0;
+    return 0;
 }
