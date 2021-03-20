@@ -3,7 +3,6 @@
 
 // TODO(#2): action popup animation
 // currently: paused, reset
-// TODO(#3): update readme
 
 #include <stdio.h>
 #include <stdlib.h>
