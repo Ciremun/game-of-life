@@ -38,11 +38,6 @@
 
 #define GRID_SIZE(gs) (sizeof(int) * gs * gs)
 
-// typedef struct {
-// 	void* grid;
-// 	int size;
-// } Grid;
-
 int *grid = NULL;
 int *next_grid = NULL;
 int grid_size = DEFAULT_GRID_SIZE;
