@@ -3,6 +3,7 @@
 
 // TODO(#2): action popup animation
 // currently: paused, reset
+// TODO(#4): Brian's Brain
 
 #include <stdio.h>
 #include <stdlib.h>
