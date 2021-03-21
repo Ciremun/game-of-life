@@ -18,10 +18,17 @@
 
 #include "rawdraw/CNFG.h"
 
+#define WINDOW_NAME "Cellular Automatons"
+#define MAX_MESSAGE_SIZE 256
+
 #define ALIVE 1
 #define DEAD 0
+#define DYING 2
 #define DEFAULT_GRID_SIZE 32
 #define GRID_SIZE_CHANGE_STEP 8
+
+#define GAME_OF_LIFE 0
+#define BRIANS_BRAIN 1
 
 #define WHITE 0xffffffff
 
@@ -32,6 +39,8 @@
 
 #define SPACE_KEY 32
 #define R_KEY 114
+#define ONE_KEY 49
+#define TWO_KEY 50
 
 #ifdef _WIN32
 #define MINUS_KEY 189
@@ -47,6 +56,7 @@
 int *grid = NULL;
 int *next_grid = NULL;
 int grid_size = DEFAULT_GRID_SIZE;
+int gamemode = GAME_OF_LIFE;
 int paused = 0;
 int reset_t = 0;
 int message_t = 0;
@@ -54,7 +64,7 @@ int message_t = 0;
 short w, h;
 int cell_width, cell_height;
 double absolute_time;
-char *message;
+char message[MAX_MESSAGE_SIZE];
 
 volatile int suspended;
 
@@ -78,7 +88,7 @@ typedef struct
 Animation pause_a = {.color = 0xffffffff, .duration = .5, .start = 0.0, .state = HIDDEN};
 Animation message_a = {.color = 0xffffffff, .duration = 1.0, .start = 0.0, .state = HIDDEN};
 
-void ToggleCell(int x, int y, int val);
+void toggle_cell(int x, int y, int val);
 
 void change_animation_state(Animation *a, int new_state)
 {
@@ -86,9 +96,11 @@ void change_animation_state(Animation *a, int new_state)
     a->state = new_state;
 }
 
-void display_message(char* msg)
+void display_message(char *msg)
 {
-    message = msg;
+    size_t msg_size = strlen(msg) + 1;
+    memset(message, 0, MAX_MESSAGE_SIZE);
+    memcpy(message, msg, msg_size);
     message_t = OGGetAbsoluteTime();
     change_animation_state(&message_a, FADE_IN);
 }
@@ -145,6 +157,9 @@ void change_grid_size(int new_size)
     next_grid = realloc(next_grid, GRID_SIZE(grid_size));
     memset(grid, 0, GRID_SIZE(grid_size));
     memset(next_grid, 0, GRID_SIZE(grid_size));
+    snprintf(message, 256, "%s: %d", "Grid Size", grid_size);
+    message_t = OGGetAbsoluteTime();
+    change_animation_state(&message_a, FADE_IN);
 }
 
 void HandleKey(int keycode, int bDown)
@@ -182,7 +197,6 @@ void HandleKey(int keycode, int bDown)
                 return;
             }
             change_grid_size(new_size);
-            display_message("Grid Shrink");
         }
         break;
 #ifndef _WIN32
@@ -190,7 +204,14 @@ void HandleKey(int keycode, int bDown)
 #endif
         case PLUS_KEY:
             change_grid_size(grid_size + GRID_SIZE_CHANGE_STEP);
-            display_message("Grid Grow");
+            break;
+        case ONE_KEY:
+            gamemode = GAME_OF_LIFE;
+            display_message("Game Of Life");
+            break;
+        case TWO_KEY:
+            gamemode = BRIANS_BRAIN;
+            display_message("Brian's Brain");
             break;
         }
     else
@@ -222,7 +243,7 @@ void HandleButton(int x, int y, int button, int bDown)
             return;
         }
 #endif
-        ToggleCell(x, y, ALIVE);
+        toggle_cell(x, y, ALIVE);
     }
 }
 
@@ -232,7 +253,7 @@ void HandleMotion(int x, int y, int mask)
     if (!mask)
         return;
 #endif
-    ToggleCell(x, y, ALIVE);
+    toggle_cell(x, y, ALIVE);
 }
 
 void HandleDestroy() {}
@@ -248,45 +269,45 @@ void sleep_ms(int ms)
 #endif
 }
 
-void GolSetup()
+void setup_window()
 {
 #ifdef __ANDROID__
-    CNFGSetupFullscreen("gol", 0);
+    CNFGSetupFullscreen(WINDOW_NAME, 0);
     CNFGGetDimensions(&w, &h);
 #else
     w = 1024;
     h = 768;
-    CNFGSetup("gol", w, h);
+    CNFGSetup(WINDOW_NAME, w, h);
 #endif
 }
 
-void GetCellIndex(int x, int y, int *cell_x, int *cell_y)
+void cell_index(int x, int y, int *cell_x, int *cell_y)
 {
     *cell_x = x / (w / grid_size);
     *cell_y = y / (h / grid_size);
 }
 
-int OnGrid(int cell_x, int cell_y)
+int on_grid(int cell_x, int cell_y)
 {
     return (0 <= cell_x && cell_x <= grid_size - 1) && (0 <= cell_y && cell_y <= grid_size - 1);
 }
 
-void ToggleCell(int x, int y, int val)
+void toggle_cell(int x, int y, int val)
 {
     int cell_x, cell_y;
-    GetCellIndex(x, y, &cell_x, &cell_y);
-    if (OnGrid(cell_x, cell_y))
+    cell_index(x, y, &cell_x, &cell_y);
+    if (on_grid(cell_x, cell_y))
         grid[cell_x * grid_size + cell_y] = val;
 }
 
-void DrawMessage(int x, int y, const char *t)
+void draw_message(int x, int y, const char *t)
 {
     CNFGPenX = x;
     CNFGPenY = y;
     CNFGDrawText(t, font_size);
 }
 
-void DrawCell(int x, int y)
+void draw_cell(int x, int y)
 {
     int cell_x = x * cell_width;
     int cell_y = y * cell_height;
@@ -294,58 +315,81 @@ void DrawCell(int x, int y)
     CNFGTackRectangle(cell_x, cell_y, cell_x + cell_width, cell_y + cell_height);
 }
 
-int CountNeighbours(int x, int y)
+int count_neighbours(int x, int y)
 {
     int neighbours = 0;
 
     for (int i = x - 1; i <= x + 1; i++)
         for (int j = y - 1; j <= y + 1; j++)
-            if (OnGrid(i, j) && (i != x || j != y) && grid[i * grid_size + j] == ALIVE)
+            if (on_grid(i, j) && (i != x || j != y) && grid[i * grid_size + j] == ALIVE)
                 neighbours++;
 
     return neighbours;
 }
 
-void ApplyRules(int x, int y)
+void game_of_life_rules(int x, int y, int nbors)
 {
-    int neighbours_count = CountNeighbours(x, y);
-    if (grid[x * grid_size + y] == ALIVE)
+    switch (grid[x * grid_size + y])
     {
-        if (neighbours_count < 2)
-            next_grid[x * grid_size + y] = DEAD;
-        else if (neighbours_count == 2 || neighbours_count == 3)
-        {
-        }
-        else if (neighbours_count > 3)
-            next_grid[x * grid_size + y] = DEAD;
-    }
-    else if (grid[x * grid_size + y] == DEAD)
-    {
-        if (neighbours_count == 3)
-            next_grid[x * grid_size + y] = ALIVE;
+        case ALIVE:
+            if (!(nbors == 2 || nbors == 3)) next_grid[x * grid_size + y] = DEAD;
+            break;
+        case DEAD:
+            if (nbors == 3) next_grid[x * grid_size + y] = ALIVE;
+            break;
     }
 }
 
-void DrawCells()
+void brians_brain_rules(int x, int y, int nbors)
+{
+    switch (grid[x * grid_size + y])
+    {
+        case ALIVE:
+            next_grid[x * grid_size + y] = DYING;
+            break;
+        case DYING:
+            next_grid[x * grid_size + y] = DEAD;
+            break;
+        case DEAD:
+            if (nbors == 2) next_grid[x * grid_size + y] = ALIVE;
+            break;
+    }
+}
+
+void apply_game_rules(int x, int y)
+{
+    int neighbours_count = count_neighbours(x, y);
+    switch (gamemode)
+    {
+    case GAME_OF_LIFE:
+        game_of_life_rules(x, y, neighbours_count);
+        break;
+    case BRIANS_BRAIN:
+        brians_brain_rules(x, y, neighbours_count);
+        break;
+    }
+}
+
+void draw_cells()
 {
     memcpy(next_grid, grid, GRID_SIZE(grid_size));
     for (int y = 0; y < grid_size; ++y)
         for (int x = 0; x < grid_size; ++x)
         {
             if (!paused)
-                ApplyRules(x, y);
+                apply_game_rules(x, y);
             if (grid[x * grid_size + y] == ALIVE)
-                DrawCell(x, y);
+                draw_cell(x, y);
         }
     memcpy(grid, next_grid, GRID_SIZE(grid_size));
 }
 
-void DrawMessages()
+void draw_messages()
 {
     if (pause_a.state != HIDDEN)
     {
         set_fade_color(&pause_a);
-        DrawMessage(w - paused_t_width, 10, "Paused");
+        draw_message(w - paused_t_width, 10, "Paused");
     }
     if (message_a.state != HIDDEN)
     {
@@ -355,14 +399,14 @@ void DrawMessages()
             change_animation_state(&message_a, FADE_OUT);
         }
         set_fade_color(&message_a);
-        DrawMessage(w / 2 - strlen(message) * 30, 120, message);
+        draw_message(w / 2 - strlen(message) * 30, 120, message);
     }
     if (reset_t)
     {
         if (absolute_time - reset_t <= 1)
         {
             CNFGColor(WHITE);
-            DrawMessage(10, 10, "Reset");
+            draw_message(10, 10, "Reset");
         }
         else
         {
@@ -374,9 +418,11 @@ void DrawMessages()
 int main()
 {
     CNFGBGColor = 0x000080ff;
-    GolSetup();
+    setup_window();
+
     cell_width = w / grid_size;
     cell_height = h / grid_size;
+
     grid = calloc(1, GRID_SIZE(grid_size));
     next_grid = calloc(1, GRID_SIZE(grid_size));
 
@@ -394,10 +440,10 @@ int main()
             sleep_ms(50);
 
         CNFGColor(0xff00ffff);
-        DrawCells();
+        draw_cells();
 
         absolute_time = OGGetAbsoluteTime();
-        DrawMessages();
+        draw_messages();
 
         CNFGSwapBuffers();
     }
