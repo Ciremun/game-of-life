@@ -157,7 +157,7 @@ void change_grid_size(int new_size)
     next_grid = realloc(next_grid, GRID_SIZE(grid_size));
     memset(grid, 0, GRID_SIZE(grid_size));
     memset(next_grid, 0, GRID_SIZE(grid_size));
-    snprintf(message, 256, "%s: %d", "Grid Size", grid_size);
+    snprintf(message, MAX_MESSAGE_SIZE, "%s: %d", "Grid Size", grid_size);
     message_t = OGGetAbsoluteTime();
     change_animation_state(&message_a, FADE_IN);
 }
