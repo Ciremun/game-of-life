@@ -23,6 +23,7 @@
 #define ALIVE 1
 #define DEAD 0
 #define DEFAULT_GRID_SIZE 32
+#define GRID_SIZE_CHANGE_STEP 8
 
 #define WHITE 0xffffffff
 
@@ -77,7 +78,7 @@ typedef struct
 } Animation;
 
 Animation pause_a = {.color = 0xffffffff, .duration = .5, .start = 0.0, .state = HIDDEN};
-Animation message_a = {.color = 0xffffffff, .duration = 1.5, .start = 0.0, .state = HIDDEN};
+Animation message_a = {.color = 0xffffffff, .duration = 1.0, .start = 0.0, .state = HIDDEN};
 
 void ToggleCell(int x, int y, int val);
 
@@ -85,6 +86,13 @@ void change_animation_state(Animation *a, int new_state)
 {
     a->start = OGGetAbsoluteTime();
     a->state = new_state;
+}
+
+void display_message(char* msg)
+{
+    message = msg;
+    message_t = OGGetAbsoluteTime();
+    change_animation_state(&message_a, FADE_IN);
 }
 
 void set_fade_color(Animation *a)
@@ -170,19 +178,21 @@ void HandleKey(int keycode, int bDown)
             break;
         case MINUS_KEY:
         {
-            int new_size = grid_size - 4;
+            int new_size = grid_size - GRID_SIZE_CHANGE_STEP;
             if (new_size <= 0)
             {
                 return;
             }
             change_grid_size(new_size);
+            display_message("Grid Shrink");
         }
         break;
 #ifndef _WIN32
         case EQ_KEY:
 #endif
         case PLUS_KEY:
-            change_grid_size(grid_size + 4);
+            change_grid_size(grid_size + GRID_SIZE_CHANGE_STEP);
+            display_message("Grid Grow");
             break;
         }
     else
@@ -341,7 +351,7 @@ void DrawMessages()
     }
     if (message_a.state != HIDDEN)
     {
-        if (message_t && absolute_time - message_t > 3)
+        if (message_t && absolute_time - message_t > 2)
         {
             message_t = 0;
             change_animation_state(&message_a, FADE_OUT);
@@ -372,9 +382,7 @@ int main()
     grid = calloc(1, GRID_SIZE(grid_size));
     next_grid = calloc(1, GRID_SIZE(grid_size));
 
-    message = "Game Of Life";
-    message_t = OGGetAbsoluteTime();
-    change_animation_state(&message_a, FADE_IN);
+    display_message("Game Of Life");
 
     while (1)
     {
