@@ -50,10 +50,12 @@ int *next_grid = NULL;
 int grid_size = DEFAULT_GRID_SIZE;
 int paused = 0;
 int reset_t = 0;
+int message_t = 0;
 
 short w, h;
 int cell_width, cell_height;
 double absolute_time;
+char *message;
 
 volatile int suspended;
 
@@ -75,8 +77,15 @@ typedef struct
 } Animation;
 
 Animation pause_a = {.color = 0xffffffff, .duration = .5, .start = 0.0, .state = HIDDEN};
+Animation message_a = {.color = 0xffffffff, .duration = 1.5, .start = 0.0, .state = HIDDEN};
 
 void ToggleCell(int x, int y, int val);
+
+void change_animation_state(Animation *a, int new_state)
+{
+    a->start = OGGetAbsoluteTime();
+    a->state = new_state;
+}
 
 void set_fade_color(Animation *a)
 {
@@ -148,12 +157,10 @@ void HandleKey(int keycode, int bDown)
                 pause_a.state = FADE_IN;
                 break;
             case IDLE:
-                pause_a.start = OGGetAbsoluteTime();
-                pause_a.state = FADE_OUT;
+                change_animation_state(&pause_a, FADE_OUT);
                 break;
             case HIDDEN:
-                pause_a.start = OGGetAbsoluteTime();
-                pause_a.state = FADE_IN;
+                change_animation_state(&pause_a, FADE_IN);
                 break;
             }
             break;
@@ -332,6 +339,16 @@ void DrawMessages()
         set_fade_color(&pause_a);
         DrawMessage(w - paused_t_width, 10, "Paused");
     }
+    if (message_a.state != HIDDEN)
+    {
+        if (message_t && absolute_time - message_t > 3)
+        {
+            message_t = 0;
+            change_animation_state(&message_a, FADE_OUT);
+        }
+        set_fade_color(&message_a);
+        DrawMessage(w / 2 - strlen(message) * 30, 120, message);
+    }
     if (reset_t)
     {
         if (absolute_time - reset_t <= 1)
@@ -354,6 +371,10 @@ int main()
     cell_height = h / grid_size;
     grid = calloc(1, GRID_SIZE(grid_size));
     next_grid = calloc(1, GRID_SIZE(grid_size));
+
+    message = "Game Of Life";
+    message_t = OGGetAbsoluteTime();
+    change_animation_state(&message_a, FADE_IN);
 
     while (1)
     {
