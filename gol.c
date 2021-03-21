@@ -24,6 +24,13 @@
 #define DEAD 0
 #define DEFAULT_GRID_SIZE 32
 
+#define WHITE 0xffffffff
+
+#define FADE_IN 0
+#define FADE_OUT 1
+#define IDLE 2
+#define HIDDEN 3
+
 #define SPACE_KEY 32
 #define R_KEY 114
 
@@ -46,6 +53,7 @@ int reset_t = 0;
 
 short w, h;
 int cell_width, cell_height;
+double absolute_time;
 
 volatile int suspended;
 
@@ -58,7 +66,60 @@ int font_size = 10;
 int paused_t_width = 200;
 #endif
 
+typedef struct
+{
+    uint32_t color;
+    double duration;
+    double start;
+    int state;
+} Animation;
+
+Animation pause_a = {.color = 0xffffffff, .duration = .5, .start = 0.0, .state = HIDDEN};
+
 void ToggleCell(int x, int y, int val);
+
+void set_fade_color(Animation *a)
+{
+    uint32_t new_color;
+    switch (a->state)
+    {
+    case FADE_IN:
+    {
+        double s_passed = absolute_time - a->start;
+        if (s_passed >= a->duration)
+        {
+            a->state = IDLE;
+            new_color = a->color;
+        }
+        else
+        {
+            new_color = (a->color & 0xffffff00) + (s_passed / a->duration) * 255;
+        }
+    }
+    break;
+    case FADE_OUT:
+    {
+        double s_passed = absolute_time - a->start;
+        if (s_passed >= a->duration)
+        {
+            a->state = HIDDEN;
+            new_color = a->color & 0xffffff00;
+        }
+        else
+        {
+            new_color = (a->color & 0xffffff00) + ((a->duration - s_passed) / a->duration) * 255;
+        }
+    }
+    break;
+    case IDLE:
+        new_color = a->color;
+        break;
+    default:
+        printf("invalid animation state\n");
+        exit(1);
+    }
+    CNFGColor(new_color);
+}
 
 void change_grid_size(int new_size)
 {
@@ -78,6 +139,23 @@ void HandleKey(int keycode, int bDown)
         {
         case SPACE_KEY:
             paused = !paused;
+            switch (pause_a.state)
+            {
+            case FADE_IN:
+                pause_a.state = FADE_OUT;
+                break;
+            case FADE_OUT:
+                pause_a.state = FADE_IN;
+                break;
+            case IDLE:
+                pause_a.start = OGGetAbsoluteTime();
+                pause_a.state = FADE_OUT;
+                break;
+            case HIDDEN:
+                pause_a.start = OGGetAbsoluteTime();
+                pause_a.state = FADE_IN;
+                break;
+            }
             break;
         case R_KEY:
             memset(grid, 0, GRID_SIZE(grid_size));
@@ -188,7 +266,6 @@ void ToggleCell(int x, int y, int val)
 
 void DrawMessage(int x, int y, const char *t)
 {
-    CNFGColor(0xffffffff);
     CNFGPenX = x;
     CNFGPenY = y;
     CNFGDrawText(t, font_size);
@@ -248,16 +325,18 @@ void DrawCells()
     memcpy(grid, next_grid, GRID_SIZE(grid_size));
 }
 
-void DrawMessages(int t)
+void DrawMessages()
 {
-    if (paused)
+    if (pause_a.state != HIDDEN)
     {
+        set_fade_color(&pause_a);
         DrawMessage(w - paused_t_width, 10, "Paused");
     }
     if (reset_t)
     {
-        if (t - reset_t <= 1)
+        if (absolute_time - reset_t <= 1)
         {
+            CNFGColor(WHITE);
             DrawMessage(10, 10, "Reset");
         }
         else
@@ -269,7 +348,6 @@ void DrawMessages(int t)
 
 int main()
 {
-    int absolute_time;
     CNFGBGColor = 0x000080ff;
     GolSetup();
     cell_width = w / grid_size;
@@ -292,7 +370,7 @@ int main()
         DrawCells();
 
         absolute_time = OGGetAbsoluteTime();
-        DrawMessages(absolute_time);
+        DrawMessages();
 
         CNFGSwapBuffers();
     }
