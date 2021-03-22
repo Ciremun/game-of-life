@@ -23,7 +23,9 @@ Show keyboard by tapping top right corner
 
 ### Linux
 
-    make linux
+
+    make -f Makefile.linux
+
 
 ### Windows
 
