@@ -6,3 +6,6 @@ gol
 *.apk
 *.obj
 *.exe
+opt.js
+subst
+main.wasm
