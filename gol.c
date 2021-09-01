@@ -484,6 +484,8 @@ int
     int ng[DEFAULT_GRID_SIZE * DEFAULT_GRID_SIZE];
     gol_memset(g, 0, GRID_SIZE(DEFAULT_GRID_SIZE));
     gol_memset(ng, 0, GRID_SIZE(DEFAULT_GRID_SIZE));
+    grid = g;
+    next_grid = ng;
 #endif // __wasm__
 
     display_message("Game Of Life");
