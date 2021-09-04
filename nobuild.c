@@ -9,11 +9,9 @@
 
 #ifdef _WIN32
 #define DEFAULT_CC "cl"
-#define DEFAULT_CXX "cl"
 #define RUN(executable) CMD(".\\" executable ".exe")
 #else
 #define DEFAULT_CC "gcc"
-#define DEFAULT_CXX "g++"
 #define RUN(executable) CMD("./" executable)
 #endif // _WIN32
 
