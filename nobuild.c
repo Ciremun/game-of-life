@@ -4,8 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define CFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c11", "-O0", "-g0"
-#define MSVC_CFLAGS "/nologo", "/W3", "/std:c11"
+#define CFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c11", "-O3", "-g0"
+#define MSVC_CFLAGS "/nologo", "/W3", "/std:c11", "/O2", "/subsystem:windows"
 
 #ifdef _WIN32
 #define DEFAULT_CC "cl"
