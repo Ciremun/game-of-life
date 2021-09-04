@@ -21,21 +21,10 @@ Show keyboard by tapping top right corner
 
 [CNLohr's guide](https://github.com/cnlohr/rawdrawandroid#steps-for-gui-less-install-windows-wsl)
 
-### Linux
+### Windows, Linux
 
+    cc nobuild.c -o nobuild && ./nobuild run
 
-    make -f Makefile.linux
+### WASM
 
-
-### Windows
-
-[Build Tools for Visual Studio 2019](https://visualstudio.microsoft.com/downloads/)  
-
-In Visual Studio Installer:  
-Windows 10 SDK  
-MSVC Build Tools & Libraries  
-
-    cmd.exe
-    "C:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\Common7\Tools\VsDevCmd.bat"
-    cd game-of-life
-    build_win.bat
+    make -f Makefile.wasm

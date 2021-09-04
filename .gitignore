@@ -6,6 +6,8 @@ gol
 *.apk
 *.obj
 *.exe
+*.old
 opt.js
 subst
 main.wasm
+nobuild

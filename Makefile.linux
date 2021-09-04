@@ -1,4 +1,0 @@
-SRC?=gol.c
-
-gol:
-	$(CC) $(SRC) -lX11 -o gol
