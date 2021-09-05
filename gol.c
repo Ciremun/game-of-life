@@ -38,9 +38,14 @@
 #define HIDDEN 3
 
 #define SPACE_KEY 32
-#define R_KEY 114
 #define ONE_KEY 49
 #define TWO_KEY 50
+
+#ifdef __wasm__
+#define R_KEY 82
+#else
+#define R_KEY 114
+#endif // __wasm__
 
 #ifdef _WIN32
 #define MINUS_KEY 189
@@ -89,6 +94,11 @@ Animation pause_a = {
     .color = WHITE, .duration = .5, .start = 0.0, .state = HIDDEN};
 Animation message_a = {
     .color = WHITE, .duration = 1.0, .start = 0.0, .state = HIDDEN};
+
+void print(double idebug);
+#ifndef __wasm__
+void print(double idebug) { (void)idebug; }
+#endif // __wasm__
 
 unsigned long long int gol_strlen(const char *s)
 {
