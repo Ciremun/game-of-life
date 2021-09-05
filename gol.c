@@ -86,9 +86,9 @@ typedef struct
 } Animation;
 
 Animation pause_a = {
-    .color = 0xffffffff, .duration = .5, .start = 0.0, .state = HIDDEN};
+    .color = WHITE, .duration = .5, .start = 0.0, .state = HIDDEN};
 Animation message_a = {
-    .color = 0xffffffff, .duration = 1.0, .start = 0.0, .state = HIDDEN};
+    .color = WHITE, .duration = 1.0, .start = 0.0, .state = HIDDEN};
 
 unsigned long long int gol_strlen(const char *s)
 {
@@ -470,7 +470,11 @@ int
 #endif // __wasm__
     main()
 {
+    #ifdef __wasm__
+    CNFGBGColor = 0x00000000;
+    #else
     CNFGBGColor = 0x000080ff;
+    #endif // __wasm__
     setup_window();
 
     cell_width = w / grid_size;
@@ -502,14 +506,16 @@ int __attribute__((export_name("loop"))) loop()
         CNFGClearFrame();
         CNFGHandleInput();
 
-#ifndef __wasm__
+#ifdef __wasm__
+        CNFGColor(0xffff00ff);
+        #else
         if (suspended)
             continue;
         if (!paused)
             OGUSleep(50000);
+        CNFGColor(0xff00ffff);
 #endif // __wasm__
 
-        CNFGColor(0xff00ffff);
         draw_cells();
 
 #ifndef __wasm__
