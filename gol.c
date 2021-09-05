@@ -33,7 +33,7 @@
 #define WHITE 0xffffffff
 
 #ifdef __wasm__
-#define TRANSPARENT WHITE
+#define TRANSPARENT 0xff000000
 #else
 #define TRANSPARENT 0xffffff00
 #endif // __wasm__
@@ -101,6 +101,7 @@ Animation pause_a = {
 Animation message_a = {
     .color = WHITE, .duration = 1.0, .start = 0.0, .state = HIDDEN};
 
+double OGGetAbsoluteTime();
 void print(double idebug);
 #ifndef __wasm__
 void print(double idebug) { (void)idebug; }
@@ -133,9 +134,7 @@ void *gol_memcpy(void *dst, void const *src, unsigned long long int size)
 
 void change_animation_state(Animation *a, int new_state)
 {
-#ifndef __wasm__
     a->start = OGGetAbsoluteTime();
-#endif // __wasm__
     a->state = new_state;
 }
 
@@ -144,9 +143,7 @@ void display_message(char *msg)
     unsigned long long int msg_size = gol_strlen(msg) + 1;
     gol_memset(message, 0, MAX_MESSAGE_SIZE);
     gol_memcpy(message, msg, msg_size);
-#ifndef __wasm__
     message_t = OGGetAbsoluteTime();
-#endif // __wasm__
     change_animation_state(&message_a, FADE_IN);
 }
 
@@ -240,9 +237,7 @@ void
             break;
         case R_KEY:
             gol_memset(grid, 0, GRID_SIZE(grid_size));
-#ifndef __wasm__
             reset_t = OGGetAbsoluteTime();
-#endif // __wasm__
             break;
 #ifndef __wasm__
         case MINUS_KEY:
@@ -534,9 +529,7 @@ int __attribute__((export_name("loop"))) loop()
 
         draw_cells();
 
-#ifndef __wasm__
         absolute_time = OGGetAbsoluteTime();
-#endif // __wasm__
         draw_messages();
 
         CNFGSwapBuffers();
