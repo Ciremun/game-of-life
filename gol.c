@@ -32,6 +32,12 @@
 
 #define WHITE 0xffffffff
 
+#ifdef __wasm__
+#define TRANSPARENT WHITE
+#else
+#define TRANSPARENT 0xffffff00
+#endif // __wasm__
+
 #define FADE_IN 0
 #define FADE_OUT 1
 #define IDLE 2
@@ -160,7 +166,7 @@ void set_fade_color(Animation *a)
         else
         {
             new_color =
-                (a->color & 0xffffff00) + (s_passed / a->duration) * 255;
+                (a->color & TRANSPARENT) + (s_passed / a->duration) * 255;
         }
     }
     break;
@@ -170,11 +176,11 @@ void set_fade_color(Animation *a)
         if (s_passed >= a->duration)
         {
             a->state = HIDDEN;
-            new_color = a->color & 0xffffff00;
+            new_color = a->color & TRANSPARENT;
         }
         else
         {
-            new_color = (a->color & 0xffffff00) +
+            new_color = (a->color & TRANSPARENT) +
                         ((a->duration - s_passed) / a->duration) * 255;
         }
     }
@@ -480,11 +486,11 @@ int
 #endif // __wasm__
     main()
 {
-    #ifdef __wasm__
+#ifdef __wasm__
     CNFGBGColor = 0x00000000;
-    #else
+#else
     CNFGBGColor = 0x000080ff;
-    #endif // __wasm__
+#endif // __wasm__
     setup_window();
 
     cell_width = w / grid_size;
@@ -518,7 +524,7 @@ int __attribute__((export_name("loop"))) loop()
 
 #ifdef __wasm__
         CNFGColor(0xffff00ff);
-        #else
+#else
         if (suspended)
             continue;
         if (!paused)
