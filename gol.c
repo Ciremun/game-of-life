@@ -523,7 +523,7 @@ int
 #ifdef __wasm__
     grid = gol_malloc(GRID_SIZE(grid_size));
     next_grid = gol_malloc(GRID_SIZE(grid_size));
-    #else
+#else
     grid = malloc(GRID_SIZE(grid_size));
     next_grid = malloc(GRID_SIZE(grid_size));
 #endif // __wasm__
