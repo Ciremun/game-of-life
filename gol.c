@@ -8,6 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#else
+#define STB_SPRINTF_IMPLEMENTATION
+#include "stb_sprintf.h"
 #endif // __wasm__
 
 #ifdef _MSC_VER
@@ -55,7 +58,7 @@
 #define R_KEY 114
 #endif // __wasm__
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__wasm__)
 #define MINUS_KEY 189
 #define PLUS_KEY 187
 #else
@@ -89,6 +92,11 @@ int paused_t_width = 350;
 int font_size = 10;
 int paused_t_width = 200;
 #endif // __ANDROID__
+
+#ifdef __wasm__
+extern unsigned char __heap_base;
+char *heap = (char *)&__heap_base;
+#endif // __wasm__
 
 typedef struct
 {
@@ -134,6 +142,21 @@ void *gol_memcpy(void *dst, void const *src, unsigned long long int size)
     return dst;
 }
 
+#ifdef __wasm__
+void *gol_malloc(unsigned long long size)
+{
+    heap += size;
+    return heap - size;
+}
+void *gol_realloc(void *old_mem, unsigned long long size,
+                  unsigned long long old_size)
+{
+    void *new_mem = gol_malloc(size);
+    gol_memcpy(new_mem, old_mem, old_size);
+    return new_mem;
+}
+#endif // __wasm__
+
 void change_animation_state(Animation *a, int new_state)
 {
     a->start = OGGetAbsoluteTime();
@@ -164,7 +187,8 @@ void set_fade_color(Animation *a)
         }
         else
         {
-            new_color = (uint32_t)((a->color & TRANSPARENT_) + (s_passed / a->duration) * 255);
+            new_color = (uint32_t)((a->color & TRANSPARENT_) +
+                                   (s_passed / a->duration) * 255);
         }
     }
     break;
@@ -178,8 +202,9 @@ void set_fade_color(Animation *a)
         }
         else
         {
-            new_color = (uint32_t)((a->color & TRANSPARENT_) +
-                        ((a->duration - s_passed) / a->duration) * 255);
+            new_color =
+                (uint32_t)((a->color & TRANSPARENT_) +
+                           ((a->duration - s_passed) / a->duration) * 255);
         }
     }
     break;
@@ -193,21 +218,28 @@ void set_fade_color(Animation *a)
     CNFGColor(new_color);
 }
 
-#ifndef __wasm__
 void change_grid_size(int new_size)
 {
-    grid_size = new_size;
-    cell_width = w / grid_size;
-    cell_height = h / grid_size;
-    grid = realloc(grid, GRID_SIZE(grid_size));
-    next_grid = realloc(next_grid, GRID_SIZE(grid_size));
-    gol_memset(grid, 0, GRID_SIZE(grid_size));
-    gol_memset(next_grid, 0, GRID_SIZE(grid_size));
-    snprintf(message, MAX_MESSAGE_SIZE, "%s: %d", "Grid Size", grid_size);
+    cell_width = w / new_size;
+    cell_height = h / new_size;
+#ifndef __wasm__
+    grid = realloc(grid, GRID_SIZE(new_size));
+    next_grid = realloc(next_grid, GRID_SIZE(new_size));
+#else
+    grid = gol_realloc(grid, GRID_SIZE(new_size), grid_size);
+    next_grid = gol_realloc(next_grid, GRID_SIZE(new_size), grid_size);
+#endif // __wasm__
+    gol_memset(grid, 0, GRID_SIZE(new_size));
+    gol_memset(next_grid, 0, GRID_SIZE(new_size));
+#ifdef __wasm__
+    stbsp_snprintf(message, MAX_MESSAGE_SIZE, "%s: %d", "Grid Size", new_size);
+#else
+    snprintf(message, MAX_MESSAGE_SIZE, "%s: %d", "Grid Size", new_size);
+#endif // __wasm__
     message_t = (int)OGGetAbsoluteTime();
     change_animation_state(&message_a, FADE_IN);
+    grid_size = new_size;
 }
-#endif // __wasm__
 
 void
 #ifdef __wasm__
@@ -240,7 +272,6 @@ void
             gol_memset(grid, 0, GRID_SIZE(grid_size));
             reset_t = (int)OGGetAbsoluteTime();
             break;
-#ifndef __wasm__
         case MINUS_KEY:
         {
             int new_size = grid_size - GRID_SIZE_CHANGE_STEP;
@@ -251,13 +282,12 @@ void
             change_grid_size(new_size);
         }
         break;
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(__wasm__)
         case EQ_KEY:
 #endif
         case PLUS_KEY:
             change_grid_size(grid_size + GRID_SIZE_CHANGE_STEP);
             break;
-#endif // __wasm__
         case ONE_KEY:
             gamemode = GAME_OF_LIFE;
             display_message("Game Of Life");
@@ -490,17 +520,15 @@ int
     cell_width = w / grid_size;
     cell_height = h / grid_size;
 
-#ifndef __wasm__
-    grid = calloc(1, GRID_SIZE(grid_size));
-    next_grid = calloc(1, GRID_SIZE(grid_size));
-#else
-    int g[DEFAULT_GRID_SIZE * DEFAULT_GRID_SIZE];
-    int ng[DEFAULT_GRID_SIZE * DEFAULT_GRID_SIZE];
-    gol_memset(g, 0, GRID_SIZE(DEFAULT_GRID_SIZE));
-    gol_memset(ng, 0, GRID_SIZE(DEFAULT_GRID_SIZE));
-    grid = g;
-    next_grid = ng;
+#ifdef __wasm__
+    grid = gol_malloc(GRID_SIZE(grid_size));
+    next_grid = gol_malloc(GRID_SIZE(grid_size));
+    #else
+    grid = malloc(GRID_SIZE(grid_size));
+    next_grid = malloc(GRID_SIZE(grid_size));
 #endif // __wasm__
+    gol_memset(grid, 0, GRID_SIZE(grid_size));
+    gol_memset(next_grid, 0, GRID_SIZE(grid_size));
 
     display_message("Game Of Life");
 
