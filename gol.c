@@ -33,9 +33,11 @@
 #define WHITE 0xffffffff
 
 #ifdef __wasm__
-#define TRANSPARENT 0xff000000
+#define BACKGROUND_COLOR 0x00000000
+#define TRANSPARENT_ 0xff000000
 #else
-#define TRANSPARENT 0xffffff00
+#define BACKGROUND_COLOR 0x000080ff
+#define TRANSPARENT_ 0xffffff00
 #endif // __wasm__
 
 #define FADE_IN 0
@@ -143,13 +145,13 @@ void display_message(char *msg)
     unsigned long long int msg_size = gol_strlen(msg) + 1;
     gol_memset(message, 0, MAX_MESSAGE_SIZE);
     gol_memcpy(message, msg, msg_size);
-    message_t = OGGetAbsoluteTime();
+    message_t = (int)OGGetAbsoluteTime();
     change_animation_state(&message_a, FADE_IN);
 }
 
 void set_fade_color(Animation *a)
 {
-    uint32_t new_color;
+    uint32_t new_color = 0;
     switch (a->state)
     {
     case FADE_IN:
@@ -162,8 +164,7 @@ void set_fade_color(Animation *a)
         }
         else
         {
-            new_color =
-                (a->color & TRANSPARENT) + (s_passed / a->duration) * 255;
+            new_color = (uint32_t)((a->color & TRANSPARENT_) + (s_passed / a->duration) * 255);
         }
     }
     break;
@@ -173,12 +174,12 @@ void set_fade_color(Animation *a)
         if (s_passed >= a->duration)
         {
             a->state = HIDDEN;
-            new_color = a->color & TRANSPARENT;
+            new_color = a->color & TRANSPARENT_;
         }
         else
         {
-            new_color = (a->color & TRANSPARENT) +
-                        ((a->duration - s_passed) / a->duration) * 255;
+            new_color = (uint32_t)((a->color & TRANSPARENT_) +
+                        ((a->duration - s_passed) / a->duration) * 255);
         }
     }
     break;
@@ -203,7 +204,7 @@ void change_grid_size(int new_size)
     gol_memset(grid, 0, GRID_SIZE(grid_size));
     gol_memset(next_grid, 0, GRID_SIZE(grid_size));
     snprintf(message, MAX_MESSAGE_SIZE, "%s: %d", "Grid Size", grid_size);
-    message_t = OGGetAbsoluteTime();
+    message_t = (int)OGGetAbsoluteTime();
     change_animation_state(&message_a, FADE_IN);
 }
 #endif // __wasm__
@@ -237,7 +238,7 @@ void
             break;
         case R_KEY:
             gol_memset(grid, 0, GRID_SIZE(grid_size));
-            reset_t = OGGetAbsoluteTime();
+            reset_t = (int)OGGetAbsoluteTime();
             break;
 #ifndef __wasm__
         case MINUS_KEY:
@@ -309,6 +310,7 @@ void
 #endif // __wasm__
     HandleButton(int x, int y, int button, int bDown)
 {
+    (void)button;
     if (bDown)
     {
 #ifdef __ANDROID__
@@ -459,7 +461,8 @@ void draw_messages()
             change_animation_state(&message_a, FADE_OUT);
         }
         set_fade_color(&message_a);
-        draw_message(w / 2 - gol_strlen(message) * 30, 120, message);
+        int message_length = (int)gol_strlen(message);
+        draw_message(w / 2 - message_length * 30, 120, message);
     }
     if (reset_t)
     {
@@ -479,13 +482,9 @@ int
 #ifdef __wasm__
     __attribute__((export_name("main")))
 #endif // __wasm__
-    main()
+    main(void)
 {
-#ifdef __wasm__
-    CNFGBGColor = 0x00000000;
-#else
-    CNFGBGColor = 0x000080ff;
-#endif // __wasm__
+    CNFGBGColor = BACKGROUND_COLOR;
     setup_window();
 
     cell_width = w / grid_size;

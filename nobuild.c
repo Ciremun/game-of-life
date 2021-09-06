@@ -5,7 +5,7 @@
 #include <string.h>
 
 #define CFLAGS "-Wall", "-Wextra", "-pedantic", "-std=c11", "-O3", "-g0"
-#define MSVC_CFLAGS "/nologo", "/W3", "/std:c11", "/O2", "/subsystem:windows"
+#define MSVC_CFLAGS "/nologo", "/W3", "/std:c11", "/O2"
 
 #ifdef _WIN32
 #define DEFAULT_CC "cl"
