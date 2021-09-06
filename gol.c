@@ -107,7 +107,7 @@ typedef struct
 } Animation;
 
 Animation pause_a = {
-    .color = WHITE, .duration = .5, .start = 0.0, .state = FADE_IN};
+    .color = WHITE, .duration = .5, .start = 0.0, .state = HIDDEN};
 Animation message_a = {
     .color = WHITE, .duration = 1.0, .start = 0.0, .state = HIDDEN};
 
@@ -530,6 +530,7 @@ int
     gol_memset(grid, 0, GRID_SIZE(grid_size));
     gol_memset(next_grid, 0, GRID_SIZE(grid_size));
 
+    change_animation_state(&pause_a, FADE_IN);
     display_message("Game Of Life");
 
 #ifdef RAWDRAW_USE_LOOP_FUNCTION
