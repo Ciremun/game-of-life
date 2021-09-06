@@ -48,11 +48,8 @@ char *readfile(const char *filename, int flags)
 	buffer = malloc(size);
 
 	fread(buffer, size, 1, file);
-	
-	if ((flags & SWALLOW) != 0) {
-		if (buffer[size - 1] == '\n')
-			buffer[size - 1] = 0x00;
-	}
+
+	buffer[size - 1] = 0x00;
 
 	fclose(file);
 	return buffer;
