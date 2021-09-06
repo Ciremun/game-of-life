@@ -73,7 +73,7 @@ int *grid = 0;
 int *next_grid = 0;
 int grid_size = DEFAULT_GRID_SIZE;
 int gamemode = GAME_OF_LIFE;
-int paused = 0;
+int paused = 1;
 int reset_t = 0;
 int message_t = 0;
 
@@ -107,7 +107,7 @@ typedef struct
 } Animation;
 
 Animation pause_a = {
-    .color = WHITE, .duration = .5, .start = 0.0, .state = HIDDEN};
+    .color = WHITE, .duration = .5, .start = 0.0, .state = FADE_IN};
 Animation message_a = {
     .color = WHITE, .duration = 1.0, .start = 0.0, .state = HIDDEN};
 
