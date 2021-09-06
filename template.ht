@@ -15,5 +15,6 @@
 		<script>
 ${JAVASCRIPT_DATA}
 		</script>
+        <a target="_blank" href="https://github.com/Ciremun/game-of-life" style="color: rgb(64, 64, 160); user-select: none; text-decoration: none;">github</a>
 	</body>
 </html>
