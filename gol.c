@@ -151,6 +151,12 @@ void *gol_malloc(unsigned long long size)
 void *gol_realloc(void *old_mem, unsigned long long size,
                   unsigned long long old_size)
 {
+    // since we only have a grid
+    if (size <= old_size)
+    {
+        heap -= old_size;
+        return heap;
+    }
     void *new_mem = gol_malloc(size);
     gol_memcpy(new_mem, old_mem, old_size);
     return new_mem;
@@ -226,8 +232,8 @@ void change_grid_size(int new_size)
     grid = realloc(grid, GRID_SIZE(new_size));
     next_grid = realloc(next_grid, GRID_SIZE(new_size));
 #else
-    grid = gol_realloc(grid, GRID_SIZE(new_size), grid_size);
-    next_grid = gol_realloc(next_grid, GRID_SIZE(new_size), grid_size);
+    grid = gol_realloc(grid, GRID_SIZE(new_size), GRID_SIZE(grid_size));
+    next_grid = gol_realloc(next_grid, GRID_SIZE(new_size), GRID_SIZE(grid_size));
 #endif // __wasm__
     gol_memset(grid, 0, GRID_SIZE(new_size));
     gol_memset(next_grid, 0, GRID_SIZE(new_size));
