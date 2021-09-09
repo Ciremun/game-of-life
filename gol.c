@@ -518,7 +518,7 @@ int
 #ifdef __wasm__
     __attribute__((export_name("main")))
 #endif // __wasm__
-    main(void)
+    main()
 {
     CNFGBGColor = BACKGROUND_COLOR;
     setup_window();
