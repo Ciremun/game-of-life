@@ -9,6 +9,18 @@
 #include <stdlib.h>
 #include <string.h>
 #else
+#include <stdint.h>
+static uint32_t SWAPS(uint32_t r)
+{
+    uint32_t ret = (r & 0xFF) << 24;
+    r >>= 8;
+    ret |= (r & 0xff) << 16;
+    r >>= 8;
+    ret |= (r & 0xff) << 8;
+    r >>= 8;
+    ret |= (r & 0xff) << 0;
+    return ret;
+}
 #define STB_SPRINTF_IMPLEMENTATION
 #include "stb_sprintf.h"
 #endif // __wasm__
@@ -33,15 +45,14 @@
 #define GAME_OF_LIFE 0
 #define BRIANS_BRAIN 1
 
-#define WHITE 0xffffffff
-
 #ifdef __wasm__
-#define BACKGROUND_COLOR 0x00000000
-#define TRANSPARENT_ 0xff000000
+#define COLOR(c) SWAPS(c)
 #else
-#define BACKGROUND_COLOR 0x000080ff
-#define TRANSPARENT_ 0xffffff00
+#define COLOR(c) c
 #endif // __wasm__
+
+#define TRANSPARENT_ 0xffffff00
+#define WHITE COLOR(0xffffffff)
 
 #define FADE_IN 0
 #define FADE_OUT 1
@@ -106,10 +117,9 @@ typedef struct
     int state;
 } Animation;
 
-Animation pause_a = {
-    .color = WHITE, .duration = .5, .start = 0.0, .state = HIDDEN};
+Animation pause_a = {.color = 0, .duration = .5, .start = 0.0, .state = HIDDEN};
 Animation message_a = {
-    .color = WHITE, .duration = 1.0, .start = 0.0, .state = HIDDEN};
+    .color = 0, .duration = 1.0, .start = 0.0, .state = HIDDEN};
 
 double OGGetAbsoluteTime();
 void print(double idebug);
@@ -221,7 +231,7 @@ void set_fade_color(Animation *a)
     {
     }
     }
-    CNFGColor(new_color);
+    CNFGColor(COLOR(new_color));
 }
 
 void change_grid_size(int new_size)
@@ -233,7 +243,8 @@ void change_grid_size(int new_size)
     next_grid = realloc(next_grid, GRID_SIZE(new_size));
 #else
     grid = gol_realloc(grid, GRID_SIZE(new_size), GRID_SIZE(grid_size));
-    next_grid = gol_realloc(next_grid, GRID_SIZE(new_size), GRID_SIZE(grid_size));
+    next_grid =
+        gol_realloc(next_grid, GRID_SIZE(new_size), GRID_SIZE(grid_size));
 #endif // __wasm__
     gol_memset(grid, 0, GRID_SIZE(new_size));
     gol_memset(next_grid, 0, GRID_SIZE(new_size));
@@ -520,8 +531,11 @@ int
 #endif // __wasm__
     main()
 {
-    CNFGBGColor = BACKGROUND_COLOR;
+    CNFGBGColor = COLOR(0x000080ff);
     setup_window();
+
+    pause_a.color = WHITE;
+    message_a.color = WHITE;
 
     cell_width = w / grid_size;
     cell_height = h / grid_size;
@@ -551,16 +565,14 @@ int __attribute__((export_name("loop"))) loop()
         CNFGClearFrame();
         CNFGHandleInput();
 
-#ifdef __wasm__
-        CNFGColor(0xffff00ff);
-#else
+#ifndef __wasm__
         if (suspended)
             continue;
         if (!paused)
             OGUSleep(50000);
-        CNFGColor(0xff00ffff);
 #endif // __wasm__
 
+        CNFGColor(COLOR(0xff00ffff));
         draw_cells();
 
         absolute_time = OGGetAbsoluteTime();
